@@ -1,0 +1,3 @@
+[submodule "libs/editor"]
+	path = libs/editor
+	url = https://github.com/wordpress-mobile/WordPress-Editor-Android.git
