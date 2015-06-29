@@ -8,10 +8,15 @@ import android.os.Looper;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Spanned;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.ToggleButton;
 
@@ -19,8 +24,6 @@ import com.android.volley.toolbox.ImageLoader;
 
 import org.wordpress.android.editor.EditorFragmentAbstract;
 import org.wordpress.android.editor.EditorWebViewAbstract;
-import org.wordpress.android.editor.JsCallbackReceiver;
-import org.wordpress.android.editor.OnJsEditorStateChangedListener;
 import org.wordpress.android.editor.Utils;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
@@ -36,8 +39,7 @@ import java.util.concurrent.TimeUnit;
 import cn.iam007.tabularasa.R;
 
 public class EditorFragment extends EditorFragmentAbstract implements View.OnClickListener,
-        View.OnTouchListener,
-        OnJsEditorStateChangedListener {
+        View.OnTouchListener, JsCallbackListener {
     private static final String ARG_PARAM_TITLE = "param_title";
     private static final String ARG_PARAM_CONTENT = "param_content";
 
@@ -58,7 +60,7 @@ public class EditorFragment extends EditorFragmentAbstract implements View.OnCli
     private String mTitle = "";
     private String mContentHtml = "";
 
-    private EditorWebViewAbstract mWebView;
+    private EditorWebView mWebView;
 
     private boolean mHideActionBarOnSoftKeyboardUp;
 
@@ -66,6 +68,10 @@ public class EditorFragment extends EditorFragmentAbstract implements View.OnCli
     private CountDownLatch mGetContentCountDownLatch;
 
     private final Map<String, ToggleButton> mTagToggleButtonMap = new HashMap<>();
+
+    // jianglin begin
+    private View mFormatBar = null;
+    // jianglin end
 
     public static EditorFragment newInstance(String title, String content) {
         EditorFragment fragment = new EditorFragment();
@@ -82,6 +88,8 @@ public class EditorFragment extends EditorFragmentAbstract implements View.OnCli
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -89,7 +97,7 @@ public class EditorFragment extends EditorFragmentAbstract implements View.OnCli
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_editor, container, false);
 
-        mWebView = (EditorWebViewAbstract) view.findViewById(R.id.webview);
+        mWebView = (EditorWebView) view.findViewById(R.id.webview);
 
         mWebView.setOnTouchListener(this);
 
@@ -149,6 +157,7 @@ public class EditorFragment extends EditorFragmentAbstract implements View.OnCli
             button.setOnClickListener(this);
         }
 
+        mFormatBar = view.findViewById(R.id.format_bar);
         return view;
     }
 
@@ -418,4 +427,57 @@ public class EditorFragment extends EditorFragmentAbstract implements View.OnCli
             button.setAlpha(alpha);
         }
     }
+
+    // jianglin begin
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.fragment_editor_menu, menu);
+    }
+
+    private boolean mInEditMode = true;
+    private String mPreFocusedField = null;
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.edit_action:
+                mInEditMode = !mInEditMode;
+                if (mInEditMode) {
+                    item.setTitle(R.string.preview);
+                } else {
+                    item.setTitle(R.string.edit);
+                }
+                setWebViewEditMode(mInEditMode);
+                break;
+        }
+        return true;
+    }
+
+    void setWebViewEditMode(boolean editable) {
+        if (editable) {
+            mWebView.execJavaScriptFromString(
+                    "ZSSEditor.getField('zss_field_title').enableEditing();");
+            mWebView.execJavaScriptFromString(
+                    "ZSSEditor.getField('zss_field_content').enableEditing();");
+            mFormatBar.setVisibility(View.VISIBLE);
+            // 指定焦点
+            String jsCommand = String.format("ZSSEditor.getField('%s').focus();", mPreFocusedField);
+            mWebView.execJavaScriptFromString(jsCommand);
+        } else {
+            mWebView.execJavaScriptFromString(
+                    "ZSSEditor.getField('zss_field_title').disableEditing();");
+            mWebView.execJavaScriptFromString(
+                    "ZSSEditor.getField('zss_field_content').disableEditing();");
+            mFormatBar.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    public void onInput(String fieldId) {
+        // 记录上一次编辑焦点区域
+        mPreFocusedField = fieldId;
+    }
+
+    // jianglin end
 }

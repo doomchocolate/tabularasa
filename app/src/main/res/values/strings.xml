@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Tabula.Rasa</string>
+    <string name="preview">preview</string>
+    <string name="edit">edit</string>
 </resources>

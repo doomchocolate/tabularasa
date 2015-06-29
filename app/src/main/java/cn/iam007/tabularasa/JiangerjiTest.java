@@ -69,7 +69,7 @@ public class JiangerjiTest extends AppCompatActivity implements
             switch (position) {
                 case 0:
                     // TODO: switch between legacy and new editor here (AB test?)
-                    fragment = new LegacyEditorFragment();
+                    fragment = new EditorFragment();
                     break;
                 case 1:
                     fragment = new EditorFragment();
@@ -96,7 +96,7 @@ public class JiangerjiTest extends AppCompatActivity implements
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 2;
+            return 1;
         }
     }
 }

@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+def getGitVersion(){
+    return "git rev-parse --short HEAD".execute().text.trim()
+}
+
+
 android {
     compileSdkVersion 22
     buildToolsVersion "22.0.1"
@@ -10,6 +15,9 @@ android {
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
+
+        // 添加到BuildConfig.java中加入git的版本号
+        buildConfigField "String", "GIT_REVISION", "\"${getGitVersion()}\""
     }
     buildTypes {
         release {
